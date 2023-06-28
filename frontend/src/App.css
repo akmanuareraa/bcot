@@ -1,0 +1,40 @@
+.bg-vaccine-bg {
+  background-image: url(./assets/images/vaccine.jpg);
+  height: 100vh;
+  background-size: cover;
+  background-repeat: no-repeat;
+}
+
+.bg-vac-man {
+  background-image: url(./assets/images/vaccine-manufacturer.jpg);
+  background-size: cover;
+  background-repeat: no-repeat;
+}
+
+.bg-dis {
+  background-image: url(./assets/images/dis.jpg);
+  background-size: cover;
+  background-repeat: no-repeat;
+}
+
+.bg-hprof {
+  background-image: url(./assets/images/hprof.jpg);
+  background-size: cover;
+  background-repeat: no-repeat;
+}
+
+.subheading {
+  margin-top: -30px;
+}
+
+/* .svg-container:hover .svg-icon path {
+  fill: white;
+}
+
+.svg-container-s:hover .svg-icon path {
+  stroke: white;
+} */
+
+.custom-shadow {
+  box-shadow: 0 4px 50px 4px rgba(0, 0, 0, 0.4);
+}
