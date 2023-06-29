@@ -53,11 +53,17 @@ function Navbar(props) {
               </p>
               <p className="text-2xl font-bold text-white">
                 {props.appState.userData.role === "Manufacturer"
-                  ? "Vaccine Manufacturer"
+                  ? "Vaccine Manufacturer" +
+                    "[" +
+                    props.appState.userProfile.uid +
+                    "]"
                   : props.appState.userData.role === "Distributor"
-                  ? "Distributor"
+                  ? "Distributor" + "[" + props.appState.userProfile.uid + "]"
                   : props.appState.userData.role === "HProf"
-                  ? "Healthcare Professional"
+                  ? "Healthcare Professional" +
+                    "[" +
+                    props.appState.userProfile.uid +
+                    "]"
                   : null}
               </p>
             </div>

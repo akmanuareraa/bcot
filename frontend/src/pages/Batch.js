@@ -23,8 +23,87 @@ function Batch(props) {
     if (props.appState.userProfile?.vaccineBatches?.length > 0) {
       props.appState.userProfile.vaccineBatches.forEach((batch) => {
         if (batch.batchId === batchId) {
+          console.log("Vaccine Batch(A): ", batch);
+          console.log(
+            "Vaccine Batch(A)1: ",
+            "MPs",
+            batch.manufactureParams,
+            "DPs",
+            batch.distributorParams
+          );
+          if (props.appState.userProfile.role === "Manufacturer") {
+            batch.manufactureParams = JSON.parse(batch.manufactureParams);
+            if (batch.manufactureParams.temperature === undefined) {
+              batch.manufactureParams = JSON.parse(
+                JSON.parse(batch.manufactureParams)
+              );
+            }
+
+            try {
+              batch.distributorParams = batch.distributorParams.replace(
+                /\\/g,
+                ""
+              );
+              batch.distributorParams = batch.distributorParams.slice(1, -1);
+              batch.distributorParams = JSON.parse(batch.distributorParams);
+            } catch (error) {
+              console.log(error);
+              console.log("Man no dist params");
+            }
+          } else if (props.appState.userProfile.role === "Distributor") {
+            batch.manufactureParams = batch.manufactureParams.replace(
+              /\//g,
+              ""
+            );
+            batch.manufactureParams = JSON.parse(batch.manufactureParams);
+            try {
+              batch.manufactureParams = JSON.parse(batch.manufactureParams);
+            } catch (error) {
+              console.log(error);
+            }
+            try {
+              batch.manufactureParams = JSON.parse(batch.manufactureParams);
+            } catch (error) {
+              console.log(error);
+            }
+            try {
+              batch.distributorParams = batch.distributorParams.replace(
+                /\\/g,
+                ""
+              );
+              batch.distributorParams = batch.distributorParams.slice(1, -1);
+              batch.distributorParams = JSON.parse(batch.distributorParams);
+            } catch (error) {
+              console.log(error);
+              console.log("Dist no dist params");
+            }
+          } else if (props.appState.userProfile.role === "HProf") {
+            if (batch.distributorParams !== undefined) {
+              batch.manufactureParams = batch.manufactureParams.replace(
+                /\//g,
+                ""
+              );
+              batch.manufactureParams = JSON.parse(
+                JSON.parse(JSON.parse(batch.manufactureParams))
+              );
+              batch.distributorParams = batch.distributorParams.replace(
+                /\\/g,
+                ""
+              );
+              batch.distributorParams = batch.distributorParams.slice(1, -1);
+              console.log("Vaccine Batch(A)1.5: ", batch.distributorParams);
+              batch.distributorParams = JSON.parse(batch.distributorParams);
+            }
+          }
+          console.log(
+            "Vaccine Batch(A)2: ",
+            "MPs",
+            batch.manufactureParams,
+            "DPs",
+            batch.distributorParams
+          );
           setVaccineBatch(batch);
-          console.log("Vaccine Batch: ", batch);
+          console.log("Vaccine Batch(B): ", batch);
         }
       });
     }
@@ -226,7 +305,7 @@ function Batch(props) {
               </div>
             </div>
             {/* manufacture parameters */}
-            {vaccineBatch.manufactureParams !== undefined ? (
+            {props.iotData !== undefined ? (
               Object.keys(vaccineBatch?.manufactureParams).length > 0 ? (
                 <>
                   <div className="flex flex-row items-center justify-between w-full mt-14 ">
@@ -234,22 +313,29 @@ function Batch(props) {
                   </div>
                   <div className="mt-0 divider"></div>
                   {/* parameters */}
-                  <div className="grid grid-cols-3 grid-rows-2 gap-y-8 gap-x-20">
+                  <div className="grid grid-cols-3 grid-rows-2 gap-y-8 gap-x-20 ">
                     {/* temperature */}
-                    <div className="flex flex-col items-center mt-4 space-y-2">
+                    <div className="flex flex-col items-center mt-4 space-y-2 w-fit">
                       <p className="mb-2 text-2xl font-extrabold">
                         Temperature
                       </p>
                       <div className="flex flex-row justify-between space-x-8">
                         <div className="flex flex-col">
                           <p className="text-sm">Average</p>
-                          <p className="text-4xl font-extrabold">18°C</p>
+                          <p className="text-4xl font-extrabold">
+                            {parseFloat(
+                              vaccineBatch.manufactureParams.temperature.average
+                            ).toFixed(1)}
+                            °C
+                          </p>
                         </div>
                         <div className="flex flex-row space-x-4">
                           <img src={optimalDivider} alt="status"></img>
                           <div className="flex flex-col">
                             <p className="text-sm">Optimal</p>
-                            <p className="font-extrabold text-green">18°C</p>
+                            <p className="text-sm font-semibold text-green">
+                              {"<"}40°C
+                            </p>
                           </div>
                         </div>
                       </div>
@@ -258,14 +344,24 @@ function Batch(props) {
                           <img src={down} alt="status"></img>
                           <div className="flex flex-col">
                             <p className="text-xs">Lowest</p>
-                            <p className="text-sm font-extrabold">18°C</p>
+                            <p className="text-sm font-extrabold">
+                              {parseFloat(
+                                vaccineBatch.manufactureParams.temperature.min
+                              ).toFixed(1)}
+                              °C
+                            </p>
                           </div>
                         </div>
                         <div className="flex flex-row space-x-4">
                           <img src={up} alt="status"></img>
                           <div className="flex flex-col">
-                            <p className="text-xs">Lowest</p>
-                            <p className="text-sm font-extrabold">18°C</p>
+                            <p className="text-xs">Highest</p>
+                            <p className="text-sm font-extrabold">
+                              {parseFloat(
+                                vaccineBatch.manufactureParams.temperature.max
+                              ).toFixed(1)}
+                              °C
+                            </p>
                           </div>
                         </div>
                       </div>
@@ -276,13 +372,20 @@ function Batch(props) {
                       <div className="flex flex-row justify-between space-x-8">
                         <div className="flex flex-col">
                           <p className="text-sm">Average</p>
-                          <p className="text-4xl font-extrabold">18%</p>
+                          <p className="text-4xl font-extrabold">
+                            {parseFloat(
+                              vaccineBatch.manufactureParams.humidity.average
+                            ).toFixed(1)}
+                            %
+                          </p>
                         </div>
                         <div className="flex flex-row space-x-4">
                           <img src={optimalDivider} alt="status"></img>
                           <div className="flex flex-col">
                             <p className="text-sm">Optimal</p>
-                            <p className="font-extrabold text-green">18%</p>
+                            <p className="text-sm font-semibold text-green">
+                              {">"}10%
+                            </p>
                           </div>
                         </div>
                       </div>
@@ -291,33 +394,48 @@ function Batch(props) {
                           <img src={down} alt="status"></img>
                           <div className="flex flex-col">
                             <p className="text-xs">Lowest</p>
-                            <p className="text-sm font-extrabold">18%</p>
+                            <p className="text-sm font-extrabold">
+                              {parseFloat(
+                                vaccineBatch.manufactureParams.humidity.min
+                              ).toFixed(1)}
+                              %
+                            </p>
                           </div>
                         </div>
                         <div className="flex flex-row space-x-4">
                           <img src={up} alt="status"></img>
                           <div className="flex flex-col">
-                            <p className="text-xs">Lowest</p>
-                            <p className="text-sm font-extrabold">18%</p>
+                            <p className="text-xs">Highest</p>
+                            <p className="text-sm font-extrabold">
+                              {parseFloat(
+                                vaccineBatch.manufactureParams.humidity.max
+                              ).toFixed(1)}
+                              %
+                            </p>
                           </div>
                         </div>
                       </div>
                     </div>
                     {/* light exposure */}
                     <div className="flex flex-col items-center mt-4 space-y-2">
-                      <p className="mb-2 text-2xl font-extrabold">
-                        Light Exposure
-                      </p>
+                      <p className="mb-2 text-2xl font-extrabold">Pressure</p>
                       <div className="flex flex-row justify-between space-x-8">
                         <div className="flex flex-col">
                           <p className="text-sm">Average</p>
-                          <p className="text-4xl font-extrabold">18°C</p>
+                          <p className="text-4xl font-extrabold">
+                            {parseFloat(
+                              vaccineBatch.manufactureParams.pressure.average
+                            ).toFixed(1)}
+                            &nbsp;pa
+                          </p>
                         </div>
                         <div className="flex flex-row space-x-4">
                           <img src={optimalDivider} alt="status"></img>
                           <div className="flex flex-col">
                             <p className="text-sm">Optimal</p>
-                            <p className="font-extrabold text-green">18°C</p>
+                            <p className="text-sm font-semibold text-green">
+                              {"<"}200&nbsp;pa
+                            </p>
                           </div>
                         </div>
                       </div>
@@ -326,31 +444,50 @@ function Batch(props) {
                           <img src={down} alt="status"></img>
                           <div className="flex flex-col">
                             <p className="text-xs">Lowest</p>
-                            <p className="text-sm font-extrabold">18°C</p>
+                            <p className="text-sm font-extrabold">
+                              {parseFloat(
+                                vaccineBatch.manufactureParams.pressure.min
+                              ).toFixed(1)}
+                              &nbsp;pa
+                            </p>
                           </div>
                         </div>
                         <div className="flex flex-row space-x-4">
                           <img src={up} alt="status"></img>
                           <div className="flex flex-col">
-                            <p className="text-xs">Lowest</p>
-                            <p className="text-sm font-extrabold">18°C</p>
+                            <p className="text-xs">Highest</p>
+                            <p className="text-sm font-extrabold">
+                              {parseFloat(
+                                vaccineBatch.manufactureParams.pressure.max
+                              ).toFixed(1)}
+                              &nbsp;pa
+                            </p>
                           </div>
                         </div>
                       </div>
                     </div>
                     {/* pressure */}
                     <div className="flex flex-col items-center mt-4 space-y-2">
-                      <p className="mb-2 text-2xl font-extrabold">Pressure</p>
+                      <p className="mb-2 text-2xl font-extrabold">
+                        Air Quality
+                      </p>
                       <div className="flex flex-row justify-between space-x-8">
                         <div className="flex flex-col">
                           <p className="text-sm">Average</p>
-                          <p className="text-4xl font-extrabold">18°C</p>
+                          <p className="text-4xl font-extrabold">
+                            {parseFloat(
+                              vaccineBatch.manufactureParams.airquality.average
+                            ).toFixed(1)}
+                            &nbsp;PM
+                          </p>
                         </div>
                         <div className="flex flex-row space-x-4">
                           <img src={optimalDivider} alt="status"></img>
                           <div className="flex flex-col">
                             <p className="text-sm">Optimal</p>
-                            <p className="font-extrabold text-green">18°C</p>
+                            <p className="text-sm font-semibold text-green">
+                              {"<"}500&nbsp;PM
+                            </p>
                           </div>
                         </div>
                       </div>
@@ -359,31 +496,48 @@ function Batch(props) {
                           <img src={down} alt="status"></img>
                           <div className="flex flex-col">
                             <p className="text-xs">Lowest</p>
-                            <p className="text-sm font-extrabold">18°C</p>
+                            <p className="text-sm font-extrabold">
+                              {parseFloat(
+                                vaccineBatch.manufactureParams.airquality.min
+                              ).toFixed(1)}
+                              &nbsp;PM
+                            </p>
                           </div>
                         </div>
                         <div className="flex flex-row space-x-4">
                           <img src={up} alt="status"></img>
                           <div className="flex flex-col">
-                            <p className="text-xs">Lowest</p>
-                            <p className="text-sm font-extrabold">18°C</p>
+                            <p className="text-xs">Highest</p>
+                            <p className="text-sm font-extrabold">
+                              {parseFloat(
+                                vaccineBatch.manufactureParams.airquality.max
+                              ).toFixed(1)}
+                              &nbsp;PM
+                            </p>
                           </div>
                         </div>
                       </div>
                     </div>
                     {/* o2 levels */}
                     <div className="flex flex-col items-center mt-4 space-y-2">
-                      <p className="mb-2 text-2xl font-extrabold">O2 Levels</p>
+                      <p className="mb-2 text-2xl font-extrabold">Power</p>
                       <div className="flex flex-row justify-between space-x-8">
                         <div className="flex flex-col">
                           <p className="text-sm">Average</p>
-                          <p className="text-4xl font-extrabold">18°C</p>
+                          <p className="text-4xl font-extrabold">
+                            {parseFloat(
+                              vaccineBatch.manufactureParams.power.average
+                            ).toFixed(1)}
+                            &nbsp;W
+                          </p>
                         </div>
                         <div className="flex flex-row space-x-4">
                           <img src={optimalDivider} alt="status"></img>
                           <div className="flex flex-col">
                             <p className="text-sm">Optimal</p>
-                            <p className="font-extrabold text-green">18°C</p>
+                            <p className="text-sm font-semibold text-green">
+                              --
+                            </p>
                           </div>
                         </div>
                       </div>
@@ -392,31 +546,48 @@ function Batch(props) {
                           <img src={down} alt="status"></img>
                           <div className="flex flex-col">
                             <p className="text-xs">Lowest</p>
-                            <p className="text-sm font-extrabold">18°C</p>
+                            <p className="text-sm font-extrabold">
+                              {parseFloat(
+                                vaccineBatch.manufactureParams.power.min
+                              ).toFixed(1)}
+                              &nbsp;W
+                            </p>
                           </div>
                         </div>
                         <div className="flex flex-row space-x-4">
                           <img src={up} alt="status"></img>
                           <div className="flex flex-col">
-                            <p className="text-xs">Lowest</p>
-                            <p className="text-sm font-extrabold">18°C</p>
+                            <p className="text-xs">Highest</p>
+                            <p className="text-sm font-extrabold">
+                              {parseFloat(
+                                vaccineBatch.manufactureParams.power.max
+                              ).toFixed(1)}
+                              &nbsp;W
+                            </p>
                           </div>
                         </div>
                       </div>
                     </div>
                     {/* co2 levels */}
                     <div className="flex flex-col items-center mt-4 space-y-2">
-                      <p className="mb-2 text-2xl font-extrabold">CO2 Levels</p>
+                      <p className="mb-2 text-2xl font-extrabold">Ph Levels</p>
                       <div className="flex flex-row justify-between space-x-8">
                         <div className="flex flex-col">
                           <p className="text-sm">Average</p>
-                          <p className="text-4xl font-extrabold">18°C</p>
+                          <p className="text-4xl font-extrabold">
+                            {vaccineBatch.manufactureParams.ph.average.charAt(
+                              0
+                            )}
+                            &nbsp;Ph
+                          </p>
                         </div>
                         <div className="flex flex-row space-x-4">
                           <img src={optimalDivider} alt="status"></img>
                           <div className="flex flex-col">
                             <p className="text-sm">Optimal</p>
-                            <p className="font-extrabold text-green">18°C</p>
+                            <p className="text-sm font-semibold text-green">
+                              {"<"}10&nbsp;Ph
+                            </p>
                           </div>
                         </div>
                       </div>
@@ -425,14 +596,20 @@ function Batch(props) {
                           <img src={down} alt="status"></img>
                           <div className="flex flex-col">
                             <p className="text-xs">Lowest</p>
-                            <p className="text-sm font-extrabold">18°C</p>
+                            <p className="text-sm font-extrabold">
+                              {vaccineBatch.manufactureParams.ph.min.charAt(0)}
+                              &nbsp;Ph
+                            </p>
                           </div>
                         </div>
                         <div className="flex flex-row space-x-4">
                           <img src={up} alt="status"></img>
                           <div className="flex flex-col">
-                            <p className="text-xs">Lowest</p>
-                            <p className="text-sm font-extrabold">18°C</p>
+                            <p className="text-xs">Highest</p>
+                            <p className="text-sm font-extrabold">
+                              {vaccineBatch.manufactureParams.ph.max.charAt(0)}
+                              &nbsp;Ph
+                            </p>
                           </div>
                         </div>
                       </div>
@@ -455,26 +632,41 @@ function Batch(props) {
               <p className="text-3xl font-bold">Logistics Parameters</p>
             </div>
             <div className="mt-0 divider"></div>
-            {vaccineBatch.distributorParams !== undefined ? (
+            {vaccineBatch.distributorParams !== undefined &&
+            (vaccineBatch.status === "In transit to HProf" ||
+              vaccineBatch.status === "Administered" ||
+              vaccineBatch.status === "Received by HProf") ? (
               Object.keys(vaccineBatch?.distributorParams).length > 0 ? (
                 <>
                   {/* parameters */}
-                  <div className="grid grid-cols-3 grid-rows-2 gap-y-8 gap-x-20">
+                  <div className="grid grid-cols-3 grid-rows-2 gap-y-8 gap-x-20 ">
                     {/* temperature */}
-                    <div className="flex flex-col items-center mt-4 space-y-2">
+                    <div className="flex flex-col items-center mt-4 space-y-2 w-fit">
                       <p className="mb-2 text-2xl font-extrabold">
                         Temperature
                       </p>
                       <div className="flex flex-row justify-between space-x-8">
                         <div className="flex flex-col">
                           <p className="text-sm">Average</p>
-                          <p className="text-4xl font-extrabold">18°C</p>
+                          <p className="text-2xl font-extrabold">
+                            {vaccineBatch.status === "In transit to HProf"
+                              ? parseFloat(
+                                  props.iotData.temperature.average
+                                ).toFixed(1)
+                              : parseFloat(
+                                  vaccineBatch.distributorParams.temperature
+                                    .average
+                                ).toFixed(1)}
+                            °C
+                          </p>
                         </div>
                         <div className="flex flex-row space-x-4">
                           <img src={optimalDivider} alt="status"></img>
                           <div className="flex flex-col">
                             <p className="text-sm">Optimal</p>
-                            <p className="font-extrabold text-green">18°C</p>
+                            <p className="text-sm font-semibold text-green">
+                              {"<"}40°C
+                            </p>
                           </div>
                         </div>
                       </div>
@@ -483,14 +675,34 @@ function Batch(props) {
                           <img src={down} alt="status"></img>
                           <div className="flex flex-col">
                             <p className="text-xs">Lowest</p>
-                            <p className="text-sm font-extrabold">18°C</p>
+                            <p className="text-sm font-extrabold">
+                              {vaccineBatch.status === "In transit to HProf"
+                                ? parseFloat(
+                                    props.iotData.temperature.average
+                                  ).toFixed(1)
+                                : parseFloat(
+                                    vaccineBatch.distributorParams.temperature
+                                      .average
+                                  ).toFixed(1)}
+                              °C
+                            </p>
                           </div>
                         </div>
                         <div className="flex flex-row space-x-4">
                           <img src={up} alt="status"></img>
                           <div className="flex flex-col">
-                            <p className="text-xs">Lowest</p>
-                            <p className="text-sm font-extrabold">18°C</p>
+                            <p className="text-xs">Highest</p>
+                            <p className="text-sm font-extrabold">
+                              {vaccineBatch.status === "In transit to HProf"
+                                ? parseFloat(
+                                    props.iotData.temperature.average
+                                  ).toFixed(1)
+                                : parseFloat(
+                                    vaccineBatch.distributorParams.temperature
+                                      .average
+                                  ).toFixed(1)}
+                              °C
+                            </p>
                           </div>
                         </div>
                       </div>
@@ -501,13 +713,25 @@ function Batch(props) {
                       <div className="flex flex-row justify-between space-x-8">
                         <div className="flex flex-col">
                           <p className="text-sm">Average</p>
-                          <p className="text-4xl font-extrabold">18%</p>
+                          <p className="text-4xl font-extrabold">
+                            {vaccineBatch.status === "In transit to HProf"
+                              ? parseFloat(
+                                  props.iotData.humidity.average
+                                ).toFixed(1)
+                              : parseFloat(
+                                  vaccineBatch.distributorParams.humidity
+                                    .average
+                                ).toFixed(1)}
+                            %
+                          </p>
                         </div>
                         <div className="flex flex-row space-x-4">
                           <img src={optimalDivider} alt="status"></img>
                           <div className="flex flex-col">
                             <p className="text-sm">Optimal</p>
-                            <p className="font-extrabold text-green">18%</p>
+                            <p className="text-sm font-semibold text-green">
+                              {">"}10%
+                            </p>
                           </div>
                         </div>
                       </div>
@@ -516,33 +740,61 @@ function Batch(props) {
                           <img src={down} alt="status"></img>
                           <div className="flex flex-col">
                             <p className="text-xs">Lowest</p>
-                            <p className="text-sm font-extrabold">18%</p>
+                            <p className="text-sm font-extrabold">
+                              {vaccineBatch.status === "In transit to HProf"
+                                ? parseFloat(
+                                    props.iotData.humidity.min
+                                  ).toFixed(1)
+                                : parseFloat(
+                                    vaccineBatch.distributorParams.humidity.min
+                                  ).toFixed(1)}
+                              %
+                            </p>
                           </div>
                         </div>
                         <div className="flex flex-row space-x-4">
                           <img src={up} alt="status"></img>
                           <div className="flex flex-col">
-                            <p className="text-xs">Lowest</p>
-                            <p className="text-sm font-extrabold">18%</p>
+                            <p className="text-xs">Highest</p>
+                            <p className="text-sm font-extrabold">
+                              {vaccineBatch.status === "In transit to HProf"
+                                ? parseFloat(
+                                    props.iotData.humidity.max
+                                  ).toFixed(1)
+                                : parseFloat(
+                                    vaccineBatch.distributorParams.humidity.max
+                                  ).toFixed(1)}
+                              %
+                            </p>
                           </div>
                         </div>
                       </div>
                     </div>
                     {/* light exposure */}
                     <div className="flex flex-col items-center mt-4 space-y-2">
-                      <p className="mb-2 text-2xl font-extrabold">
-                        Light Exposure
-                      </p>
+                      <p className="mb-2 text-2xl font-extrabold">Pressure</p>
                       <div className="flex flex-row justify-between space-x-8">
                         <div className="flex flex-col">
                           <p className="text-sm">Average</p>
-                          <p className="text-4xl font-extrabold">18°C</p>
+                          <p className="text-4xl font-extrabold">
+                            {vaccineBatch.status === "In transit to HProf"
+                              ? parseFloat(
+                                  props.iotData.pressure.average
+                                ).toFixed(1)
+                              : parseFloat(
+                                  vaccineBatch.distributorParams.pressure
+                                    .average
+                                ).toFixed(1)}
+                            &nbsp;pa
+                          </p>
                         </div>
                         <div className="flex flex-row space-x-4">
                           <img src={optimalDivider} alt="status"></img>
                           <div className="flex flex-col">
                             <p className="text-sm">Optimal</p>
-                            <p className="font-extrabold text-green">18°C</p>
+                            <p className="text-sm font-semibold text-green">
+                              {"<"}200&nbsp;pa
+                            </p>
                           </div>
                         </div>
                       </div>
@@ -551,31 +803,63 @@ function Batch(props) {
                           <img src={down} alt="status"></img>
                           <div className="flex flex-col">
                             <p className="text-xs">Lowest</p>
-                            <p className="text-sm font-extrabold">18°C</p>
+                            <p className="text-sm font-extrabold">
+                              {vaccineBatch.status === "In transit to HProf"
+                                ? parseFloat(
+                                    props.iotData.pressure.min
+                                  ).toFixed(1)
+                                : parseFloat(
+                                    vaccineBatch.distributorParams.pressure.min
+                                  ).toFixed(1)}
+                              &nbsp;pa
+                            </p>
                           </div>
                         </div>
                         <div className="flex flex-row space-x-4">
                           <img src={up} alt="status"></img>
                           <div className="flex flex-col">
-                            <p className="text-xs">Lowest</p>
-                            <p className="text-sm font-extrabold">18°C</p>
+                            <p className="text-xs">Highest</p>
+                            <p className="text-sm font-extrabold">
+                              {vaccineBatch.status === "In transit to HProf"
+                                ? parseFloat(
+                                    props.iotData.pressure.max
+                                  ).toFixed(1)
+                                : parseFloat(
+                                    vaccineBatch.distributorParams.pressure.max
+                                  ).toFixed(1)}
+                              &nbsp;pa
+                            </p>
                           </div>
                         </div>
                       </div>
                     </div>
                     {/* pressure */}
                     <div className="flex flex-col items-center mt-4 space-y-2">
-                      <p className="mb-2 text-2xl font-extrabold">Pressure</p>
+                      <p className="mb-2 text-2xl font-extrabold">
+                        Air Quality
+                      </p>
                       <div className="flex flex-row justify-between space-x-8">
                         <div className="flex flex-col">
                           <p className="text-sm">Average</p>
-                          <p className="text-4xl font-extrabold">18°C</p>
+                          <p className="text-4xl font-extrabold">
+                            {vaccineBatch.status === "In transit to HProf"
+                              ? parseFloat(
+                                  props.iotData.airquality.average
+                                ).toFixed(1)
+                              : parseFloat(
+                                  vaccineBatch.distributorParams.airquality
+                                    .average
+                                ).toFixed(1)}
+                            &nbsp;PM
+                          </p>
                         </div>
                         <div className="flex flex-row space-x-4">
                           <img src={optimalDivider} alt="status"></img>
                           <div className="flex flex-col">
                             <p className="text-sm">Optimal</p>
-                            <p className="font-extrabold text-green">18°C</p>
+                            <p className="text-sm font-semibold text-green">
+                              {"<"}500&nbsp;PM
+                            </p>
                           </div>
                         </div>
                       </div>
@@ -584,31 +868,62 @@ function Batch(props) {
                           <img src={down} alt="status"></img>
                           <div className="flex flex-col">
                             <p className="text-xs">Lowest</p>
-                            <p className="text-sm font-extrabold">18°C</p>
+                            <p className="text-sm font-extrabold">
+                              {vaccineBatch.status === "In transit to HProf"
+                                ? parseFloat(
+                                    props.iotData.airquality.min
+                                  ).toFixed(1)
+                                : parseFloat(
+                                    vaccineBatch.distributorParams.airquality
+                                      .min
+                                  ).toFixed(1)}
+                              &nbsp;PM
+                            </p>
                           </div>
                         </div>
                         <div className="flex flex-row space-x-4">
                           <img src={up} alt="status"></img>
                           <div className="flex flex-col">
-                            <p className="text-xs">Lowest</p>
-                            <p className="text-sm font-extrabold">18°C</p>
+                            <p className="text-xs">Highest</p>
+                            <p className="text-sm font-extrabold">
+                              {vaccineBatch.status === "In transit to HProf"
+                                ? parseFloat(
+                                    props.iotData.airquality.max
+                                  ).toFixed(1)
+                                : parseFloat(
+                                    vaccineBatch.distributorParams.airquality
+                                      .max
+                                  ).toFixed(1)}
+                              &nbsp;PM
+                            </p>
                           </div>
                         </div>
                       </div>
                     </div>
                     {/* o2 levels */}
                     <div className="flex flex-col items-center mt-4 space-y-2">
-                      <p className="mb-2 text-2xl font-extrabold">O2 Levels</p>
+                      <p className="mb-2 text-2xl font-extrabold">Power</p>
                       <div className="flex flex-row justify-between space-x-8">
                         <div className="flex flex-col">
                           <p className="text-sm">Average</p>
-                          <p className="text-4xl font-extrabold">18°C</p>
+                          <p className="text-4xl font-extrabold">
+                            {vaccineBatch.status === "In transit to HProf"
+                              ? parseFloat(props.iotData.power.average).toFixed(
+                                  1
+                                )
+                              : parseFloat(
+                                  vaccineBatch.distributorParams.power.average
+                                ).toFixed(1)}
+                            &nbsp;W
+                          </p>
                         </div>
                         <div className="flex flex-row space-x-4">
                           <img src={optimalDivider} alt="status"></img>
                           <div className="flex flex-col">
                             <p className="text-sm">Optimal</p>
-                            <p className="font-extrabold text-green">18°C</p>
+                            <p className="text-sm font-semibold text-green">
+                              --
+                            </p>
                           </div>
                         </div>
                       </div>
@@ -617,31 +932,56 @@ function Batch(props) {
                           <img src={down} alt="status"></img>
                           <div className="flex flex-col">
                             <p className="text-xs">Lowest</p>
-                            <p className="text-sm font-extrabold">18°C</p>
+                            <p className="text-sm font-extrabold">
+                              {vaccineBatch.status === "In transit to HProf"
+                                ? parseFloat(props.iotData.power.min).toFixed(1)
+                                : parseFloat(
+                                    vaccineBatch.distributorParams.power.min
+                                  ).toFixed(1)}
+                              &nbsp;W
+                            </p>
                           </div>
                         </div>
                         <div className="flex flex-row space-x-4">
                           <img src={up} alt="status"></img>
                           <div className="flex flex-col">
-                            <p className="text-xs">Lowest</p>
-                            <p className="text-sm font-extrabold">18°C</p>
+                            <p className="text-xs">Highest</p>
+                            <p className="text-sm font-extrabold">
+                              {vaccineBatch.status === "In transit to HProf"
+                                ? parseFloat(props.iotData.power.max).toFixed(1)
+                                : parseFloat(
+                                    vaccineBatch.distributorParams.power.max
+                                  ).toFixed(1)}
+                              &nbsp;W
+                            </p>
                           </div>
                         </div>
                       </div>
                     </div>
                     {/* co2 levels */}
                     <div className="flex flex-col items-center mt-4 space-y-2">
-                      <p className="mb-2 text-2xl font-extrabold">CO2 Levels</p>
+                      <p className="mb-2 text-2xl font-extrabold">Ph Levels</p>
                       <div className="flex flex-row justify-between space-x-8">
                         <div className="flex flex-col">
                           <p className="text-sm">Average</p>
-                          <p className="text-4xl font-extrabold">18°C</p>
+                          <p className="text-4xl font-extrabold">
+                            {vaccineBatch.status === "In transit to HProf"
+                              ? parseFloat(
+                                  props.iotData.ph.average / 10
+                                ).toFixed(1)
+                              : parseFloat(
+                                  vaccineBatch.distributorParams.ph.average / 10
+                                ).toFixed(1)}
+                            &nbsp;Ph
+                          </p>
                         </div>
                         <div className="flex flex-row space-x-4">
                           <img src={optimalDivider} alt="status"></img>
                           <div className="flex flex-col">
                             <p className="text-sm">Optimal</p>
-                            <p className="font-extrabold text-green">18°C</p>
+                            <p className="text-sm font-semibold text-green">
+                              {"<"}10&nbsp;Ph
+                            </p>
                           </div>
                         </div>
                       </div>
@@ -650,14 +990,32 @@ function Batch(props) {
                           <img src={down} alt="status"></img>
                           <div className="flex flex-col">
                             <p className="text-xs">Lowest</p>
-                            <p className="text-sm font-extrabold">18°C</p>
+                            <p className="text-sm font-extrabold">
+                              {vaccineBatch.status === "In transit to HProf"
+                                ? parseFloat(props.iotData.ph.min / 10).toFixed(
+                                    1
+                                  )
+                                : parseFloat(
+                                    vaccineBatch.distributorParams.ph.min / 10
+                                  ).toFixed(1)}
+                              &nbsp;Ph
+                            </p>
                           </div>
                         </div>
                         <div className="flex flex-row space-x-4">
                           <img src={up} alt="status"></img>
                           <div className="flex flex-col">
-                            <p className="text-xs">Lowest</p>
-                            <p className="text-sm font-extrabold">18°C</p>
+                            <p className="text-xs">Highest</p>
+                            <p className="text-sm font-extrabold">
+                              {vaccineBatch.status === "In transit to HProf"
+                                ? parseFloat(props.iotData.ph.max / 10).toFixed(
+                                    1
+                                  )
+                                : parseFloat(
+                                    vaccineBatch.distributorParams.ph.max / 10
+                                  ).toFixed(1)}
+                              &nbsp;Ph
+                            </p>
                           </div>
                         </div>
                       </div>

@@ -236,6 +236,22 @@ function Dashboard(props) {
           </div>
         </div>
       </div>
+      <div className="flex flex-row justify-center w-full pt-10 space-x-4">
+        <button
+          className="capitalize border-0 btn bg-custom-primary"
+          onClick={() => console.log("STATE: ", props.appState)}
+        >
+          Get State
+        </button>
+        <button
+          className="capitalize border-0 btn bg-custom-primary"
+          onClick={() => {
+            props.fetchUserProfile();
+          }}
+        >
+          Refresh Data
+        </button>
+      </div>
     </div>
   );
 }

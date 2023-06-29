@@ -20,25 +20,11 @@ var blake = require('blakejs');
 // custom addition
 const { MongoClient } = require('mongodb');
 const { ObjectId } = require('mongodb');
-// const contractABI = require('./utils/abi.json');
 const Web3 = require('web3');
-// const AWS = require('aws-sdk');
-// const multer = require('multer');
-// const multerS3 = require('multer-s3');
-// const fs = require('fs');
-// const path = require('path');
-// const crypto = require('crypto');
 const mongoose = require('mongoose');
 
 // ===================================================
 // custom addition
-
-// const connection = mongoose.createConnection('mongodb://localhost:27017');
-// const web3 = new Web3('https://rpc-mumbai.maticvigil.com');
-// const contractAddress = '0x686F47d9c9630FeD17b2306124FfF7FA95E2D1A1';
-// const walletAddress = '0x4A5B8807e404CFb3A944F9fAB9B673F560cF6031';
-// const privateKey = '3f125921340c3d136e757eb57c7e312773cbfdb4286273d54643134974b2251b';
-// const contract = new web3.eth.Contract(contractABI, contractAddress);
 const mongoUrl = 'mongodb+srv://admin:jUdQCTB58QMNRW2Q@cluster0.gwedclb.mongodb.net/';
 
 const client = new MongoClient(mongoUrl, {
@@ -59,20 +45,6 @@ async function connectToMongoDB() {
 const initSetup = async () => {
   await connectToMongoDB();
   console.log('[2] Connected Successfully to MongoDB Atlas');
-
-  // const key = tweetnacl.randomBytes(32);
-  // console.log('[+] ', key);
-
-  // const nonce = tweetnacl.randomBytes(24);
-  // console.log('[+] ', nonce);
-
-  // const enc = tweetnacl.secretbox(util.decodeUTF8('Hello'), nonce, key);
-  // console.log('[+++] ', enc);
-
-  // const dec = tweetnacl.secretbox.open(enc, nonce, key);
-  // console.log('[---] ', util.encodeUTF8(dec));
-
-  // console.log('[***] ', blake.blake2bHex('abc'));
 };
 
 initSetup();
@@ -424,6 +396,9 @@ app.post('/update-status', async (req, res) => {
       userProfileObject.userProfile.vaccineBatches = userProfileObject.userProfile.vaccineBatches.map((batch) => {
         if (batch.batchId === recv.batchId) {
           batch.status = recv.status;
+          if (batch.status === 'Administered' || batch.status === 'Received by HProf') {
+            batch.distributorParams = JSON.stringify(recv.distributorParams);
+          }
         }
         return batch;
       });
@@ -449,19 +424,36 @@ app.post('/update-status', async (req, res) => {
         const batchObject = batchIntegrityVerification.batchObject.batchObject;
         console.log('[+] batchObject before status update', batchObject);
         batchObject.status = recv.status;
+        if (batch.status === 'Administered' || batch.status === 'Received by HProf') {
+          batchObject.distributorParams = recv.distributorParams;
+        }
         console.log('[+] batchObject after status update', batchObject);
         batchHash = await hashBatchObject(batchObject);
         console.log('[+] batchHash', batchHash);
         const encryptedBatchObject = await encryptBatchObjectES(batchObject, recv.batchKey);
         console.log('[+] encryptedBatchObject', encryptedBatchObject);
-        const updateBatchResult = await batchCollection.updateOne(
-          { batchId: recv.batchId },
-          {
-            $set: {
-              status: encryptedBatchObject.batchObject.status,
-            },
-          }
-        );
+        let updateBatchResult = '';
+        if (batch.status === 'Administered' || batch.status === 'Received by HProf') {
+          updateBatchResult = await batchCollection.updateOne(
+            { batchId: recv.batchId },
+            {
+              $set: {
+                status: encryptedBatchObject.batchObject.status,
+                distributorParams: encryptedBatchObject.batchObject.distributorParams,
+              },
+            }
+          );
+        } else {
+          updateBatchResult = await batchCollection.updateOne(
+            { batchId: recv.batchId },
+            {
+              $set: {
+                status: encryptedBatchObject.batchObject.status,
+              },
+            }
+          );
+        }
+
         if (misc) {
           if (misc.hprofId !== '' && misc.hprofId !== undefined) {
             const unencResult = await unenc.updateOne(
@@ -574,6 +566,9 @@ app.post('/update-status-misc', async (req, res) => {
       const batchObject = batchIntegrityVerification.batchObject.batchObject;
       console.log('[+] batchObject before status update', batchObject);
       batchObject.status = recv.status;
+      if (batchObject.status === 'Administered' || batchObject.status === 'Received by HProf') {
+        batchObject.distributorParams = '"' + JSON.stringify(recv.distributorParams) + '"';
+      }
       if (misc.hprofId !== undefined && misc.hprofId !== '') batchObject.hprofId = misc.hprofId;
       if (misc.disAuthBy !== undefined && misc.disAuthBy !== '') batchObject.disAuthBy = misc.disAuthBy;
       if (misc.disTimestamp !== undefined && misc.disTimestamp !== '') batchObject.disTimestamp = misc.disTimestamp;
@@ -1013,6 +1008,10 @@ const verifyBatchIntegrity = async (batchObject, encodedString, hash) => {
 
   let calculatedHash = '';
 
+  if (decryptedBatchObject.batchObject.distributorParams.length > 10) {
+    decryptedBatchObject.batchObject.distributorParams = decryptedBatchObject.batchObject.distributorParams.slice(1, -1);
+  }
+
   const stringForHash =
     decryptedBatchObject.batchObject.batchId +
     decryptedBatchObject.batchObject.manufacturerID +
@@ -1034,12 +1033,16 @@ const verifyBatchIntegrity = async (batchObject, encodedString, hash) => {
     decryptedBatchObject.batchObject.hprofTxnHash +
     decryptedBatchObject.batchObject.hprofTimestamp;
 
-  console.log('[+] [verifyBatchIntegrity] stringForHash', stringForHash);
+  console.log('[+] [verifyBatchIntegrity] stringForHash (2)', stringForHash);
   let svar = stringForHash.replace(/\\/g, '');
   console.log('[+] [hashBatchObject] stringForHash-jsonify', svar);
   svar = svar.replace('"{"', '{"');
   svar = svar.replace('"}"', '"}');
   svar = svar.replace('"{}"', '{}');
+  svar = svar.replace('}"0', '}0');
+  svar = svar.replace('}""0', '}"0');
+  // svar = svar.replace('""{"', '"{"');
+  // svar = svar.replace('}}""', '}}"');
   console.log('[+] [hashBatchObject] stringForHash-replace', svar);
 
   calculatedHash = blake.blake2bHex(svar);
@@ -1205,12 +1208,14 @@ const getHash = async (batchObject, encodedString) => {
     decryptedBatchObject.batchObject.hprofTxnHash +
     decryptedBatchObject.batchObject.hprofTimestamp;
 
-  console.log('[+] [verifyBatchIntegrity] stringForHash', stringForHash);
+  console.log('[+] [verifyBatchIntegrity] stringForHash (1)', stringForHash);
   let svar = stringForHash.replace(/\\/g, '');
   console.log('[+] [hashBatchObject] stringForHash-jsonify', svar);
   svar = svar.replace('"{"', '{"');
   svar = svar.replace('"}"', '"}');
   svar = svar.replace('"{}"', '{}');
+  svar = svar.replace('}"0', '}0');
+  svar = svar.replace('}""0', '}"0');
   console.log('[+] [hashBatchObject] stringForHash-replace', svar);
 
   calculatedHash = blake.blake2bHex(svar);

@@ -11,16 +11,22 @@ function Track(props) {
         <ManufacturerTrack
           appState={props.appState}
           updateStatus={props.updateStatus}
+          iotData={props.iotData}
+          setIoTData={props.setIoTData}
         />
       ) : props.appState.userData.role === "Distributor" ? (
         <DistributorTrack
           appState={props.appState}
           updateStatus={props.updateStatus}
+          iotData={props.iotData}
+          setIoTData={props.setIoTData}
         />
       ) : props.appState.userData.role === "HProf" ? (
         <HProfTrack
           appState={props.appState}
           updateStatus={props.updateStatus}
+          iotData={props.iotData}
+          setIoTData={props.setIoTData}
         />
       ) : null}
     </>

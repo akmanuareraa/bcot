@@ -862,7 +862,8 @@ function App() {
     vaccineName,
     vaccineCount,
     expiry,
-    distributorId
+    distributorId,
+    manufactureParams
   ) => {
     setLoading((prevState) => {
       return {
@@ -870,56 +871,6 @@ function App() {
         message: "Creating new batch...",
       };
     });
-    //   temperature: 0,
-    //   humidity: 0,
-    //   pressure: 0,
-    //   ph: 0,
-    //   energy: 0,
-    //   power: 0,
-    //   airquality: 0,
-    //   gasemission: 0,
-    let manufactureParams = {
-      temperature: {
-        min: iotData.temperature.min.toString() || "10",
-        max: iotData.temperature.max.toString() || "40",
-        average: iotData.temperature.average.toString() || "25",
-      },
-      humidity: {
-        min: iotData.humidity.min.toString() || "10",
-        max: iotData.humidity.max.toString() || "40",
-        average: iotData.humidity.average.toString() || "25",
-      },
-      pressure: {
-        min: iotData.pressure.min.toString() || "10",
-        max: iotData.pressure.max.toString() || "40",
-        average: iotData.pressure.average.toString() || "25",
-      },
-      ph: {
-        min: iotData.ph.min.toString() || "10",
-        max: iotData.ph.max.toString() || "40",
-        average: iotData.ph.average.toString() || "25",
-      },
-      energy: {
-        min: iotData.energy.min.toString() || "10",
-        max: iotData.energy.max.toString() || "40",
-        average: iotData.energy.average.toString() || "25",
-      },
-      power: {
-        min: iotData.power.min.toString() || "10",
-        max: iotData.power.max.toString() || "40",
-        average: iotData.power.average.toString() || "25",
-      },
-      airquality: {
-        min: iotData.airquality.min.toString() || "10",
-        max: iotData.airquality.max.toString() || "40",
-        average: iotData.airquality.average.toString() || "25",
-      },
-      gasemission: {
-        min: iotData.gasemission.min.toString() || "10",
-        max: iotData.gasemission.max.toString() || "40",
-        average: iotData.gasemission.average.toString() || "25",
-      },
-    };
     console.log(
       "<< Create New Vaccine Batch Request Sent to Smart Contract >>",
       batchId,
@@ -948,7 +899,6 @@ function App() {
         "<< Create New Vaccine Batch Result Smart Contract>>",
         result
       );
-
       const txnHash = result.transactionHash;
       let batchObject = {
         batchId: batchId,
@@ -1262,51 +1212,6 @@ function App() {
         userKey: appState.userData.key,
         userId: appState.userProfile.userId,
       };
-
-      if (status === "Received by HProf" || status === "Administered") {
-        objectToSend.distributorParams = {
-          temperature: {
-            min: iotData.temperature.min.toString() || "10",
-            max: iotData.temperature.max.toString() || "40",
-            average: iotData.temperature.average.toString() || "25",
-          },
-          humidity: {
-            min: iotData.humidity.min.toString() || "10",
-            max: iotData.humidity.max.toString() || "40",
-            average: iotData.humidity.average.toString() || "25",
-          },
-          pressure: {
-            min: iotData.pressure.min.toString() || "10",
-            max: iotData.pressure.max.toString() || "40",
-            average: iotData.pressure.average.toString() || "25",
-          },
-          ph: {
-            min: iotData.ph.min.toString() || "10",
-            max: iotData.ph.max.toString() || "40",
-            average: iotData.ph.average.toString() || "25",
-          },
-          energy: {
-            min: iotData.energy.min.toString() || "10",
-            max: iotData.energy.max.toString() || "40",
-            average: iotData.energy.average.toString() || "25",
-          },
-          power: {
-            min: iotData.power.min.toString() || "10",
-            max: iotData.power.max.toString() || "40",
-            average: iotData.power.average.toString() || "25",
-          },
-          airquality: {
-            min: iotData.airquality.min.toString() || "10",
-            max: iotData.airquality.max.toString() || "40",
-            average: iotData.airquality.average.toString() || "25",
-          },
-          gasemission: {
-            min: iotData.gasemission.min.toString() || "10",
-            max: iotData.gasemission.max.toString() || "40",
-            average: iotData.gasemission.average.toString() || "25",
-          },
-        };
-      }
 
       let misc = {};
 

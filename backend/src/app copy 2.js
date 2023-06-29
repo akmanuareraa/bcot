@@ -20,25 +20,11 @@ var blake = require('blakejs');
 // custom addition
 const { MongoClient } = require('mongodb');
 const { ObjectId } = require('mongodb');
-// const contractABI = require('./utils/abi.json');
 const Web3 = require('web3');
-// const AWS = require('aws-sdk');
-// const multer = require('multer');
-// const multerS3 = require('multer-s3');
-// const fs = require('fs');
-// const path = require('path');
-// const crypto = require('crypto');
 const mongoose = require('mongoose');
 
 // ===================================================
 // custom addition
-
-// const connection = mongoose.createConnection('mongodb://localhost:27017');
-// const web3 = new Web3('https://rpc-mumbai.maticvigil.com');
-// const contractAddress = '0x686F47d9c9630FeD17b2306124FfF7FA95E2D1A1';
-// const walletAddress = '0x4A5B8807e404CFb3A944F9fAB9B673F560cF6031';
-// const privateKey = '3f125921340c3d136e757eb57c7e312773cbfdb4286273d54643134974b2251b';
-// const contract = new web3.eth.Contract(contractABI, contractAddress);
 const mongoUrl = 'mongodb+srv://admin:jUdQCTB58QMNRW2Q@cluster0.gwedclb.mongodb.net/';
 
 const client = new MongoClient(mongoUrl, {
@@ -59,20 +45,6 @@ async function connectToMongoDB() {
 const initSetup = async () => {
   await connectToMongoDB();
   console.log('[2] Connected Successfully to MongoDB Atlas');
-
-  // const key = tweetnacl.randomBytes(32);
-  // console.log('[+] ', key);
-
-  // const nonce = tweetnacl.randomBytes(24);
-  // console.log('[+] ', nonce);
-
-  // const enc = tweetnacl.secretbox(util.decodeUTF8('Hello'), nonce, key);
-  // console.log('[+++] ', enc);
-
-  // const dec = tweetnacl.secretbox.open(enc, nonce, key);
-  // console.log('[---] ', util.encodeUTF8(dec));
-
-  // console.log('[***] ', blake.blake2bHex('abc'));
 };
 
 initSetup();
@@ -728,6 +700,25 @@ app.post('/get-batch-data', async (req, res) => {
   }
 });
 
+app.post('/get-batch-hash-by-id', async (req, res) => {
+  console.log('[+] [get-batch-hash-by-id] req.body', req.body);
+  const batchId = req.body.batchId;
+  const eString = req.body.eString;
+  try {
+    const db = client.db('bcot');
+    const batchCollection = db.collection('batches');
+    const batch = await batchCollection.findOne({ batchId: batchId });
+    const hash = await getHash(batch, eString);
+    res.status(200).json({
+      status: 'success',
+      hash: hash,
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(200).json({ status: 'failed' });
+  }
+});
+
 const encryptUserProfile = async (userProfile, encodedString) => {
   console.log('[+] encryptUserProfile', userProfile, encodedString);
   const decodedString = encodedString.split('xxxxx');
@@ -1141,6 +1132,63 @@ const decryptBatchObjectES = async (batchObject, encodedString) => {
       message: 'Error decrypting batch object',
     };
   }
+};
+
+const getHash = async (batchObject, encodedString) => {
+  console.log('[+] [verifyBatchIntegrity] verifyBatchIntegrity', encodedString);
+  const decodedString = encodedString.split('xxxxx');
+  console.log('[+] [verifyBatchIntegrity] decodedString', decodedString);
+  const key = util.decodeBase64(decodedString[0]);
+  console.log('[+] [verifyBatchIntegrity] key', key);
+  const nonce = util.decodeBase64(decodedString[1]);
+  console.log('[+] [verifyBatchIntegrity] nonce', nonce);
+
+  const decryptedBatchObject = await decryptBatchObject(batchObject, key, nonce);
+
+  console.log('[+] [verifyBatchIntegrity] decryptedBatchObject response', decryptedBatchObject);
+
+  if (decryptedBatchObject.status === 'failed') {
+    return {
+      status: 'failed',
+      message: 'Error decrypting batch object',
+    };
+  }
+
+  let calculatedHash = '';
+
+  const stringForHash =
+    decryptedBatchObject.batchObject.batchId +
+    decryptedBatchObject.batchObject.manufacturerID +
+    decryptedBatchObject.batchObject.txnHash +
+    decryptedBatchObject.batchObject.vaccineName +
+    decryptedBatchObject.batchObject.vaccineCount +
+    decryptedBatchObject.batchObject.expiry +
+    decryptedBatchObject.batchObject.distributorId +
+    decryptedBatchObject.batchObject.manufactureParams +
+    decryptedBatchObject.batchObject.authorizedBy +
+    decryptedBatchObject.batchObject.status +
+    decryptedBatchObject.batchObject.timestamp +
+    decryptedBatchObject.batchObject.distributorParams +
+    decryptedBatchObject.batchObject.hprofId +
+    decryptedBatchObject.batchObject.distAuthBy +
+    decryptedBatchObject.batchObject.distTxnHash +
+    decryptedBatchObject.batchObject.distTimestamp +
+    decryptedBatchObject.batchObject.hprofAuthBy +
+    decryptedBatchObject.batchObject.hprofTxnHash +
+    decryptedBatchObject.batchObject.hprofTimestamp;
+
+  console.log('[+] [verifyBatchIntegrity] stringForHash', stringForHash);
+  let svar = stringForHash.replace(/\\/g, '');
+  console.log('[+] [hashBatchObject] stringForHash-jsonify', svar);
+  svar = svar.replace('"{"', '{"');
+  svar = svar.replace('"}"', '"}');
+  svar = svar.replace('"{}"', '{}');
+  console.log('[+] [hashBatchObject] stringForHash-replace', svar);
+
+  calculatedHash = blake.blake2bHex(svar);
+  console.log('[+] [verifyBatchIntegrity] calculatedHash', calculatedHash);
+
+  return calculatedHash;
 };
 
 // =================================================================
