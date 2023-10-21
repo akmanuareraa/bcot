@@ -23,7 +23,7 @@ import Batch from "./pages/Batch";
 
 function App() {
   const navigate = useNavigate();
-  const backendURL = "http://localhost:4948";
+  const backendURL = "http://localhost:3000";
   // const [iotData, setIoTData] = useState({
   //   temperature: 0,
   //   humidity: 0,
@@ -556,7 +556,7 @@ function App() {
       if (result !== "error") {
         await axios
           .post(backendURL + "/v1/auth/login", {
-            email: email,
+            email: email.toLowerCase(),
             password: password,
           })
           .then(async (response) => {
